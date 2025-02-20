@@ -1,19 +1,9 @@
-<!DOCTYPE HTML>
-<html>
-    <head>
-        <title>
-            TransLit
-        </title>
-
-    </head>
-</html>
-<body class="class1">
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Translate with Voice</title>
+    <title>TransLit with Scoring</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -37,12 +27,25 @@
             font-weight: bold;
             color: #007BFF;
         }
+        #scoreboard {
+            margin-top: 40px;
+            font-size: 18px;
+            text-align: left;
+            width: 60%;
+            margin: 0 auto;
+        }
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Google Translate with Voice</h1>
+    <h1>TransLit with Live Scoring</h1>
 
+    <h2>Enter Text to Translate</h2>
     <textarea id="textToTranslate" placeholder="Enter text here..."></textarea>
     <br>
 
@@ -63,9 +66,25 @@
 
     <p id="translatedText">Translation will appear here...</p>
 
+    <h2>Player Scoring</h2>
+    <div>
+        <label for="playerName">Enter Player Name:</label>
+        <input type="text" id="playerName" placeholder="Enter player name">
+        <button onclick="addPlayer()">Add Player</button>
+    </div>
+
+    <div id="scoreboard">
+        <h3>Live Scores:</h3>
+        <div class="score-entry">
+            <span>Player Name</span><span>Score</span>
+        </div>
+    </div>
+
     <script>
         let translated = "";
+        let players = [];
 
+        // Function to translate text
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
@@ -89,6 +108,7 @@
                 });
         }
 
+        // Function to play translation sound
         function speakTranslation() {
             if (!translated) {
                 alert("Translate something first!");
@@ -97,46 +117,54 @@
 
             let speech = new SpeechSynthesisUtterance(translated);
             let targetLanguage = document.getElementById("language").value;
-            speech.lang = targetLanguage; // Set correct pronunciation
+            speech.lang = targetLanguage;
 
             window.speechSynthesis.speak(speech);
         }
+
+        // Add player and update scoreboard
+        function addPlayer() {
+            let playerName = document.getElementById("playerName").value.trim();
+            if (playerName === "" || players.length >= 5) {
+                alert("Please enter a valid player name (max 5 players).");
+                return;
+            }
+
+            if (players.some(player => player.name === playerName)) {
+                alert("Player already exists!");
+                return;
+            }
+
+            players.push({ name: playerName, score: 0 });
+            updateScoreboard();
+        }
+
+        // Increase score for a player
+        function updateScoreboard() {
+            const scoreboard = document.getElementById("scoreboard");
+            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+
+            players.forEach(player => {
+                let playerEntry = document.createElement("div");
+                playerEntry.classList.add("score-entry");
+                playerEntry.innerHTML = `
+                    <span>${player.name}</span>
+                    <span>${player.score}</span>
+                    <button onclick="increaseScore('${player.name}')">+1</button>
+                `;
+                scoreboard.appendChild(playerEntry);
+            });
+        }
+
+        // Increase score for a specific player
+        function increaseScore(playerName) {
+            const player = players.find(p => p.name === playerName);
+            if (player) {
+                player.score++;
+                updateScoreboard();
+            }
+        }
     </script>
 
 </body>
 </html>
-
-<body>
-
-    <h1>Point System</h1>
-    <p class="points">Points: <span id="score">0</span></p>
-    <button onclick="increasePoints()">Increase</button>
-    <button onclick="decreasePoints()">Decrease</button>
-    <button onclick="resetPoints()">Reset</button>
-
-    <script>
-        let points = 0;
-
-        function updatePoints() {
-            document.getElementById("score").innerText = points;
-        }
-
-        function increasePoints() {
-            points++;
-            updatePoints();
-        }
-
-        function decreasePoints() {
-            if (points > 0) points--;
-            updatePoints();
-        }
-
-        function resetPoints() {
-            points = 0;
-            updatePoints();
-        }
-    </script>
-
-</body>
-</html>
-</body>
