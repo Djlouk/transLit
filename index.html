@@ -40,7 +40,7 @@
             margin-bottom: 10px;
         }
     </style>
-    
+
     <!-- Load Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -70,7 +70,7 @@
         window.update = update;
 
         // Define the addPlayer function
-        function addPlayer() {
+        window.addPlayer = function() {
             let playerName = document.getElementById("playerName").value.trim();
             if (!playerName) {
                 alert("Enter a player name!");
@@ -88,10 +88,10 @@
             }).catch((error) => {
                 console.error("Error adding player:", error);
             });
-        }
+        };
 
         // Function to handle translation
-        function translateText() {
+        window.translateText = function() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
 
@@ -112,10 +112,10 @@
                     console.error("Error:", error);
                     alert("Translation failed. Please try again.");
                 });
-        }
+        };
 
         // Function to speak the translation
-        function speakTranslation() {
+        window.speakTranslation = function() {
             let translated = document.getElementById("translatedText").innerText;
             if (!translated) {
                 alert("Translate something first!");
@@ -127,10 +127,10 @@
             speech.lang = targetLanguage;
 
             window.speechSynthesis.speak(speech);
-        }
+        };
 
         // Function to increase the score of a player
-        function increaseScore(playerId) {
+        window.increaseScore = function(playerId) {
             let playerRef = ref(db, 'players/' + playerId);
 
             onValue(playerRef, (snapshot) => {
@@ -140,7 +140,7 @@
                     update(playerRef, { score: newScore });
                 }
             }, { onlyOnce: true });
-        }
+        };
 
         // Listen for changes in player data and update scoreboard
         onValue(ref(db, 'players'), (snapshot) => {
