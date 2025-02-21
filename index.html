@@ -44,7 +44,7 @@
     <!-- Load Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -212,7 +212,6 @@
     <br>
 
     <button onclick="translateText()">Translate</button>
-    <button id="speakButton" data-lang="" onclick="speakTranslation()">🔊 Speak</button>
 
     <p id="translatedText">Translation will appear here...</p>
 
