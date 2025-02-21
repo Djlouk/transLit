@@ -165,18 +165,20 @@
             }
         }
         // Initialize Firebase
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+        const firebaseConfig = {
+    apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
+    authDomain: "translit-d2fea.firebaseapp.com",
+    databaseURL: "https://translit-d2fea.firebaseio.com",
+    projectId: "translit-d2fea",
+    storageBucket: "translit-d2fea.appspot.com",
+    messagingSenderId: "859534826301",
+    appId: "1:859534826301:web:82744789ead06c16108354"
 };
 
-const app = firebase.initializeApp(firebaseConfig);
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 
 // Store player scores
 let playersRef = db.ref('players');
