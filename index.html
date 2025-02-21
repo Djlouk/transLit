@@ -61,133 +61,137 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Global Firebase Database Reference
-        window.db = db; 
-        window.ref = ref;
-        window.set = set;
-        window.push = push;
-        window.onValue = onValue;
-        window.update = update;
-        window.remove = remove;
+        // Function to add a new player
+        window.addPlayer = function() {
+            let playerName = document.getElementById("playerName").value.trim();
+            if (!playerName) {
+                alert("Enter a player name!");
+                return;
+            }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            // Function to add a player
-            window.addPlayer = function() {
-                let playerName = document.getElementById("playerName").value.trim();
-                if (!playerName) {
-                    alert("Enter a player name!");
-                    return;
-                }
+            let playersRef = ref(db, 'players');
+            let newPlayerRef = push(playersRef);
 
-                let playersRef = ref(db, 'players');
-                let newPlayerRef = push(playersRef);
+            set(newPlayerRef, {
+                name: playerName,
+                score: 0
+            }).then(() => {
+                console.log("Player added:", playerName);
+            }).catch((error) => {
+                console.error("Error adding player:", error);
+            });
+        };
 
-                set(newPlayerRef, {
-                    name: playerName,
-                    score: 0
-                }).then(() => {
-                    console.log("Player added:", playerName);
-                }).catch((error) => {
-                    console.error("Error adding player:", error);
+        // Function to remove a player
+        window.removePlayer = function(playerId) {
+            const playerRef = ref(db, 'players/' + playerId);
+            remove(playerRef)
+                .then(() => {
+                    console.log("Player removed successfully");
+                })
+                .catch((error) => {
+                    console.error("Error removing player: ", error);
                 });
-            };
+        };
 
-            // Function to handle text translation
-            window.translateText = function() {
-                let text = document.getElementById("textToTranslate").value;
-                let targetLanguage = document.getElementById("language").value;
+        // Function to increase a player's score
+        window.increaseScore = function(playerId) {
+            let playerRef = ref(db, 'players/' + playerId);
 
-                if (text.trim() === "") {
-                    alert("Please enter text to translate.");
-                    return;
+            onValue(playerRef, (snapshot) => {
+                let playerData = snapshot.val();
+                if (playerData) {
+                    let newScore = (playerData.score || 0) + 1;
+                    update(playerRef, { score: newScore });
                 }
+            }, { onlyOnce: true });
+        };
 
-                let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        let translated = data[0].map(item => item[0]).join("");
-                        document.getElementById("translatedText").innerText = translated;
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        alert("Translation failed. Please try again.");
-                    });
-            };
-
-            // Function to speak the translated text
-            window.speakTranslation = function() {
-                let translated = document.getElementById("translatedText").innerText;
-                if (!translated) {
-                    alert("Translate something first!");
-                    return;
-                }
-
-                let speech = new SpeechSynthesisUtterance(translated);
-                let targetLanguage = document.getElementById("language").value;
-                speech.lang = targetLanguage;
-
-                window.speechSynthesis.speak(speech);
-            };
-
-            // Function to increase player score
-            window.increaseScore = function(playerId) {
-                let playerRef = ref(db, 'players/' + playerId);
-
-                onValue(playerRef, (snapshot) => {
-                    let playerData = snapshot.val();
-                    if (playerData) {
-                        let newScore = (playerData.score || 0) + 1;
-                        update(playerRef, { score: newScore });
-                    }
-                }, { onlyOnce: true });
-            };
-
-            // Function to remove a player
-            window.removePlayer = function(playerId) {
-                const playerRef = ref(db, 'players/' + playerId);
-                remove(playerRef)
-                    .then(() => {
-                        console.log("Player removed successfully");
-                    })
-                    .catch((error) => {
-                        console.error("Error removing player:", error);
-                    });
-            };
-
-            // Function to reset all players' scores
-            window.resetAllScores = function() {
-                const playersRef = ref(db, 'players');
-                onValue(playersRef, (snapshot) => {
-                    snapshot.forEach(childSnapshot => {
-                        const playerId = childSnapshot.key;
-                        const playerRef = ref(db, 'players/' + playerId);
-                        update(playerRef, { score: 0 });
-                    });
+        // Function to reset all scores
+        window.resetAllScores = function() {
+            const playersRef = ref(db, 'players');
+            onValue(playersRef, (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const playerId = childSnapshot.key;
+                    const playerRef = ref(db, 'players/' + playerId);
+                    update(playerRef, { score: 0 });
                 });
-            };
+            }, { onlyOnce: true });
+        };
 
-            // Listen for changes in player data and update scoreboard
-            onValue(ref(db, 'players'), (snapshot) => {
-    const scoreboard = document.getElementById('scoreboard');
-    scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
-
-    snapshot.forEach(childSnapshot => {
-        let player = childSnapshot.val();
-        let playerId = childSnapshot.key;
-        scoreboard.innerHTML += `
-            <div class="score-entry">
-                <span>${player.name}</span>
-                <span>${player.score}</span>
-                <button onclick="increaseScore('${playerId}')">+1</button>
-                <button onclick="removePlayer('${playerId}')">Delete</button>
-            </div>
-        `;
-    });
-});
-
+        // Listen for player changes and update scoreboard
+        onValue(ref(db, 'players'), (snapshot) => {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+            
+            snapshot.forEach(childSnapshot => {
+                let player = childSnapshot.val();
+                let playerId = childSnapshot.key;
+                scoreboard.innerHTML += `
+                    <div class="score-entry">
+                        <span>${player.name}</span>
+                        <span>${player.score}</span>
+                        <button onclick="increaseScore('${playerId}')">+1</button>
+                        <button onclick="removePlayer('${playerId}')">Delete</button>
+                    </div>
+                `;
+            });
         });
+
+        // Function to translate text and store in Firebase
+        window.translateText = function() {
+            let text = document.getElementById("textToTranslate").value;
+            let targetLanguage = document.getElementById("language").value;
+
+            if (text.trim() === "") {
+                alert("Please enter text to translate.");
+                return;
+            }
+
+            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let translated = data[0].map(item => item[0]).join("");
+                    document.getElementById("translatedText").innerText = translated;
+
+                    // Store translation in Firebase
+                    set(ref(db, 'latestTranslation'), {
+                        text: translated,
+                        language: targetLanguage
+                    });
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Translation failed. Please try again.");
+                });
+        };
+
+        // Listen for translation updates in real-time
+        onValue(ref(db, 'latestTranslation'), (snapshot) => {
+            if (snapshot.exists()) {
+                let data = snapshot.val();
+                document.getElementById("translatedText").innerText = data.text;
+                document.getElementById("speakButton").setAttribute("data-lang", data.language);
+            }
+        });
+
+        // Function to speak the translation (for all players)
+        window.speakTranslation = function() {
+            let translated = document.getElementById("translatedText").innerText;
+            let targetLanguage = document.getElementById("speakButton").getAttribute("data-lang");
+
+            if (!translated) {
+                alert("No translation available!");
+                return;
+            }
+
+            let speech = new SpeechSynthesisUtterance(translated);
+            speech.lang = targetLanguage;
+
+            window.speechSynthesis.speak(speech);
+        };
     </script>
 </head>
 <body>
@@ -211,25 +215,18 @@
     <br>
 
     <button onclick="translateText()">Translate</button>
-    <button onclick="speakTranslation()">🔊 Speak</button>
+    <button id="speakButton" data-lang="" onclick="speakTranslation()">🔊 Speak</button>
 
     <p id="translatedText">Translation will appear here...</p>
 
     <h2>Player Scoring</h2>
     <div>
-        <label for="playerName">Enter Player Name:</label>
         <input type="text" id="playerName" placeholder="Enter player name">
         <button onclick="addPlayer()">Add Player</button>
+        <button onclick="resetAllScores()">Reset Scores</button>
     </div>
 
-    <div id="scoreboard">
-        <h3>Live Scores:</h3>
-        <div class="score-entry">
-            <span>Player Name</span><span>Score</span>
-        </div>
-    </div>
-
-    <button onclick="resetAllScores()">Reset All Scores</button>
+    <div id="scoreboard"></div>
 
 </body>
 </html>
