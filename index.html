@@ -40,14 +40,13 @@
             margin-bottom: 10px;
         }
     </style>
-
-    <!-- Firebase v9 Modular SDK -->
+    
+    <!-- Load Firebase SDK -->
     <script type="module">
-        // Import the necessary Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        // Firebase configuration
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
             authDomain: "translit-d2fea.firebaseapp.com",
@@ -62,10 +61,36 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Store translated text
-        let translated = "";
+        // Global Firebase Database Reference
+        window.db = db; 
+        window.ref = ref;
+        window.set = set;
+        window.push = push;
+        window.onValue = onValue;
+        window.update = update;
 
-        // Translate text function
+        // Define the addPlayer function
+        function addPlayer() {
+            let playerName = document.getElementById("playerName").value.trim();
+            if (!playerName) {
+                alert("Enter a player name!");
+                return;
+            }
+
+            let playersRef = ref(db, 'players');
+            let newPlayerRef = push(playersRef);
+
+            set(newPlayerRef, {
+                name: playerName,
+                score: 0
+            }).then(() => {
+                console.log("Player added:", playerName);
+            }).catch((error) => {
+                console.error("Error adding player:", error);
+            });
+        }
+
+        // Function to handle translation
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
@@ -80,7 +105,7 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    translated = data[0].map(item => item[0]).join("");
+                    let translated = data[0].map(item => item[0]).join("");
                     document.getElementById("translatedText").innerText = translated;
                 })
                 .catch(error => {
@@ -89,8 +114,9 @@
                 });
         }
 
-        // Speak the translated text
+        // Function to speak the translation
         function speakTranslation() {
+            let translated = document.getElementById("translatedText").innerText;
             if (!translated) {
                 alert("Translate something first!");
                 return;
@@ -103,61 +129,37 @@
             window.speechSynthesis.speak(speech);
         }
 
-        // Add player to Firebase
-        function addPlayer() {
-            let playerName = document.getElementById("playerName").value.trim();
-            if (!playerName) {
-                alert("Enter a player name!");
-                return;
-            }
-
-            const playersRef = ref(db, 'players');
-            const newPlayerRef = push(playersRef);  // Push new player
-
-            set(newPlayerRef, {
-                name: playerName,
-                score: 0
-            });
-        }
-
-        // Increase score of a player
+        // Function to increase the score of a player
         function increaseScore(playerId) {
-            const playerRef = ref(db, 'players/' + playerId);
+            let playerRef = ref(db, 'players/' + playerId);
 
-            playerRef.once('value', (snapshot) => {
+            onValue(playerRef, (snapshot) => {
                 let playerData = snapshot.val();
                 if (playerData) {
                     let newScore = (playerData.score || 0) + 1;
                     update(playerRef, { score: newScore });
                 }
-            });
+            }, { onlyOnce: true });
         }
 
-        // Listen for changes in the player data and update scoreboard
-        const scoreboard = document.getElementById('scoreboard');
-
+        // Listen for changes in player data and update scoreboard
         onValue(ref(db, 'players'), (snapshot) => {
-            console.log("Database snapshot: ", snapshot.val());  // Debugging line
-            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>"; // Reset header
-
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+            
             snapshot.forEach(childSnapshot => {
                 let player = childSnapshot.val();
                 let playerId = childSnapshot.key;
-
-                const playerEntry = document.createElement("div");
-                playerEntry.classList.add("score-entry");
-
-                playerEntry.innerHTML = `
-                    <span>${player.name}</span>
-                    <span>${player.score}</span>
-                    <button onclick="increaseScore('${playerId}')">+1</button>
+                scoreboard.innerHTML += `
+                    <div class="score-entry">
+                        <span>${player.name}</span>
+                        <span>${player.score}</span>
+                        <button onclick="increaseScore('${playerId}')">+1</button>
+                    </div>
                 `;
-                
-                scoreboard.appendChild(playerEntry);  // Append new player entry to scoreboard
             });
         });
     </script>
-
 </head>
 <body>
 
