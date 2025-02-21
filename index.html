@@ -109,6 +109,7 @@
     <script>
         let translated = "";
 
+        // Translate text
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
@@ -132,6 +133,7 @@
                 });
         }
 
+        // Speak the translated text
         function speakTranslation() {
             if (!translated) {
                 alert("Translate something first!");
@@ -145,6 +147,7 @@
             window.speechSynthesis.speak(speech);
         }
 
+        // Add new player to Firebase
         function addPlayer() {
             let playerName = document.getElementById("playerName").value.trim();
             if (!playerName) {
@@ -161,6 +164,7 @@
             });
         }
 
+        // Increase score for a player
         function increaseScore(playerId) {
             let playerRef = ref(db, 'players/' + playerId);
 
@@ -173,24 +177,27 @@
             }, { onlyOnce: true });
         }
 
+        // Listen to database changes and update scoreboard
         onValue(ref(db, 'players'), (snapshot) => {
-    console.log("Database snapshot: ", snapshot.val());  // Debugging line
-    const scoreboard = document.getElementById('scoreboard');
-    scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
-    
-    snapshot.forEach(childSnapshot => {
-        let player = childSnapshot.val();
-        let playerId = childSnapshot.key;
-        scoreboard.innerHTML += `
-            <div class="score-entry">
-                <span>${player.name}</span>
-                <span>${player.score}</span>
-                <button onclick="increaseScore('${playerId}')">+1</button>
-            </div>
-        `;
-    });
-});
+            console.log("Database snapshot: ", snapshot.val());  // Debugging line
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>"; // Reset header
 
+            snapshot.forEach(childSnapshot => {
+                let player = childSnapshot.val();
+                let playerId = childSnapshot.key;
+                const playerEntry = document.createElement("div");
+                playerEntry.classList.add("score-entry");
+
+                playerEntry.innerHTML = `
+                    <span>${player.name}</span>
+                    <span>${player.score}</span>
+                    <button onclick="increaseScore('${playerId}')">+1</button>
+                `;
+                
+                scoreboard.appendChild(playerEntry);  // Append new player entry to scoreboard
+            });
+        });
     </script>
 </body>
 </html>
