@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TransLit with Scoring</title>
@@ -108,6 +109,8 @@
 
     <script>
         let translated = "";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
@@ -172,9 +175,7 @@
                 }
             }, { onlyOnce: true });
         }
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
+    
 
         onValue(ref(db, 'players'), (snapshot) => {
             const scoreboard = document.getElementById('scoreboard');
