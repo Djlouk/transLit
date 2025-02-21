@@ -41,31 +41,10 @@
         }
     </style>
     
-    <!-- Load Firebase as ES Module -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    <!-- Load Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
-            authDomain: "translit-d2fea.firebaseapp.com",
-            databaseURL: "https://translit-d2fea.firebaseio.com",
-            projectId: "translit-d2fea",
-            storageBucket: "translit-d2fea.appspot.com",
-            messagingSenderId: "859534826301",
-            appId: "1:859534826301:web:82744789ead06c16108354"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        window.db = db; // Make Firebase accessible globally
-        window.ref = ref;
-        window.set = set;
-        window.push = push;
-        window.onValue = onValue;
-        window.update = update;
-    </script>
 </head>
 <body>
 
@@ -107,9 +86,25 @@
     </div>
 
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
+            authDomain: "translit-d2fea.firebaseapp.com",
+            databaseURL: "https://translit-d2fea.firebaseio.com",
+            projectId: "translit-d2fea",
+            storageBucket: "translit-d2fea.appspot.com",
+            messagingSenderId: "859534826301",
+            appId: "1:859534826301:web:82744789ead06c16108354"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database(app);  // Firebase Realtime Database initialization
+
+        // Store translated text
         let translated = "";
 
-        // Translate text
+        // Translate text function
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
@@ -147,7 +142,7 @@
             window.speechSynthesis.speak(speech);
         }
 
-        // Add new player to Firebase
+        // Add player to Firebase
         function addPlayer() {
             let playerName = document.getElementById("playerName").value.trim();
             if (!playerName) {
@@ -155,37 +150,39 @@
                 return;
             }
 
-            let playersRef = ref(db, 'players');
-            let newPlayerRef = push(playersRef);
+            const playersRef = db.ref('players');
+            const newPlayerRef = playersRef.push();  // Push new player
 
-            set(newPlayerRef, {
+            newPlayerRef.set({
                 name: playerName,
                 score: 0
             });
         }
 
-        // Increase score for a player
+        // Increase score of a player
         function increaseScore(playerId) {
-            let playerRef = ref(db, 'players/' + playerId);
+            const playerRef = db.ref('players/' + playerId);
 
-            onValue(playerRef, (snapshot) => {
+            playerRef.once('value', (snapshot) => {
                 let playerData = snapshot.val();
                 if (playerData) {
                     let newScore = (playerData.score || 0) + 1;
-                    update(playerRef, { score: newScore });
+                    playerRef.update({ score: newScore });
                 }
-            }, { onlyOnce: true });
+            });
         }
 
-        // Listen to database changes and update scoreboard
-        onValue(ref(db, 'players'), (snapshot) => {
+        // Listen for changes in the player data and update scoreboard
+        const scoreboard = document.getElementById('scoreboard');
+
+        db.ref('players').on('value', (snapshot) => {
             console.log("Database snapshot: ", snapshot.val());  // Debugging line
-            const scoreboard = document.getElementById('scoreboard');
             scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>"; // Reset header
 
             snapshot.forEach(childSnapshot => {
                 let player = childSnapshot.val();
                 let playerId = childSnapshot.key;
+
                 const playerEntry = document.createElement("div");
                 playerEntry.classList.add("score-entry");
 
@@ -198,6 +195,7 @@
                 scoreboard.appendChild(playerEntry);  // Append new player entry to scoreboard
             });
         });
+
     </script>
 </body>
 </html>
