@@ -174,22 +174,23 @@
         }
 
         onValue(ref(db, 'players'), (snapshot) => {
-            const scoreboard = document.getElementById('scoreboard');
-            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+    console.log("Database snapshot: ", snapshot.val());  // Debugging line
+    const scoreboard = document.getElementById('scoreboard');
+    scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+    
+    snapshot.forEach(childSnapshot => {
+        let player = childSnapshot.val();
+        let playerId = childSnapshot.key;
+        scoreboard.innerHTML += `
+            <div class="score-entry">
+                <span>${player.name}</span>
+                <span>${player.score}</span>
+                <button onclick="increaseScore('${playerId}')">+1</button>
+            </div>
+        `;
+    });
+});
 
-            snapshot.forEach(childSnapshot => {
-                let player = childSnapshot.val();
-                let playerId = childSnapshot.key;
-
-                scoreboard.innerHTML += `
-                    <div class="score-entry">
-                        <span>${player.name}</span>
-                        <span>${player.score}</span>
-                        <button onclick="increaseScore('${playerId}')">+1</button>
-                    </div>
-                `;
-            });
-        });
     </script>
 </body>
 </html>
