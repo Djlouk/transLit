@@ -1,26 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Add Firebase SDK FIRST -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-
-<script>
-  // Initialize Firebase AFTER loading SDK
-  const firebaseConfig = {
-      apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
-      authDomain: "translit-d2fea.firebaseapp.com",
-      databaseURL: "https://translit-d2fea.firebaseio.com",
-      projectId: "translit-d2fea",
-      storageBucket: "translit-d2fea.appspot.com",
-      messagingSenderId: "859534826301",
-      appId: "1:859534826301:web:82744789ead06c16108354"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TransLit with Scoring</title>
@@ -90,7 +70,7 @@
     <div>
         <label for="playerName">Enter Player Name:</label>
         <input type="text" id="playerName" placeholder="Enter player name">
-        <button onclick="addPlayer()">Add Player</button>
+        <button id="addPlayer">Add Player</button>
     </div>
 
     <div id="scoreboard">
@@ -102,9 +82,7 @@
 
     <script>
         let translated = "";
-        let players = [];
 
-        // Function to translate text
         function translateText() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
@@ -128,7 +106,6 @@
                 });
         }
 
-        // Function to play translation sound
         function speakTranslation() {
             if (!translated) {
                 alert("Translate something first!");
@@ -142,114 +119,73 @@
             window.speechSynthesis.speak(speech);
         }
 
-        // Add player and update scoreboard
-        
+        let playersRef;
 
-        // Increase score for a player
-        playersRef.on('value', function(snapshot) {
-    const scoreboard = document.getElementById('scoreboard');
-    scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+        function addPlayer() {
+            let playerName = document.getElementById("playerName").value.trim();
+            
+            if (!playerName) {
+                alert("Enter a player name!");
+                return;
+            }
 
-    snapshot.forEach(childSnapshot => {
-        let player = childSnapshot.val();
-        let playerId = childSnapshot.key;
+            let newPlayerRef = playersRef.push();
+            newPlayerRef.set({
+                name: playerName,
+                score: 0
+            });
+        }
 
-        scoreboard.innerHTML += `
-            <div class="score-entry">
-                <span>${player.name}</span>
-                <span>${player.score}</span>
-                <button onclick="increaseScore('${playerId}')">+1</button>
-            </div>
-        `;
-    });
-});
+        function increaseScore(playerId) {
+            const playerRef = playersRef.child(playerId);
 
+            playerRef.once('value').then(snapshot => {
+                let currentScore = snapshot.val().score || 0;
+                playerRef.update({ score: currentScore + 1 });
+            });
+        }
 
-        // Increase score for a specific player
-        playerRef.update({
-    score: playerRef.score + 1
-});
-function increaseScore(playerId) {
-    const playerRef = db.ref('players').child(playerId);
+        function updateScoreboard() {
+            playersRef.on('value', function(snapshot) {
+                const scoreboard = document.getElementById('scoreboard');
+                scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
 
-    playerRef.once('value').then(snapshot => {
-        let currentScore = snapshot.val().score || 0;
-        playerRef.update({
-            score: currentScore + 1
-        });
-    });
-}
+                snapshot.forEach(childSnapshot => {
+                    let player = childSnapshot.val();
+                    let playerId = childSnapshot.key;
 
+                    scoreboard.innerHTML += `
+                        <div class="score-entry">
+                            <span>${player.name}</span>
+                            <span>${player.score}</span>
+                            <button onclick="increaseScore('${playerId}')">+1</button>
+                        </div>
+                    `;
+                });
+            });
+        }
 
-// Store player scores
-let playersRef = db.ref('players');
+        document.getElementById("addPlayer").addEventListener("click", addPlayer);
+    </script>
 
-// Add player to the database
-function addPlayer() {
-    let playerName = document.getElementById("playerName").value.trim();
-    
-    if (!playerName) {
-        alert("Enter a player name!");
-        return;
-    }
+    <!-- Firebase SDK (Moved to the bottom) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
-    console.log("Adding player:", playerName); // Debugging log
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
+            authDomain: "translit-d2fea.firebaseapp.com",
+            databaseURL: "https://translit-d2fea.firebaseio.com",
+            projectId: "translit-d2fea",
+            storageBucket: "translit-d2fea.appspot.com",
+            messagingSenderId: "859534826301",
+            appId: "1:859534826301:web:82744789ead06c16108354"
+        };
 
-    let newPlayerRef = db.ref('players').push();
-    newPlayerRef.set({
-        name: playerName,
-        score: 0
-    }).then(() => {
-        console.log("Player added successfully");
-    }).catch(error => {
-        console.error("Error adding player:", error);
-    });
-}
-
-
-// Update player score
-function increaseScore(playerId) {
-    const playerRef = playersRef.child(playerId);
-    playerRef.update({
-        score: playerRef.score + 1
-    });
-}
-
-// Listen for changes to player scores (real-time)
-playersRef.on('child_changed', function(snapshot) {
-    const player = snapshot.val();
-    updateScoreboard(player);
-});
-
-// Display the updated scoreboard
-function updateScoreboard(player) {
-    const scoreboard = document.getElementById('scoreboard');
-    scoreboard.innerHTML = ''; // clear previous list
-    playersRef.on('child_added', function(snapshot) {
-        const player = snapshot.val();
-        // Display player score
-        scoreboard.innerHTML += `
-            <div class="score-entry">
-                <span>${player.name}</span>
-                <span>${player.score}</span>
-                <button onclick="increaseScore('${snapshot.key}')">+1</button>
-            </div>
-        `;
-    });
-}
-
-// On Player Action
-document.getElementById("addPlayer").addEventListener("click", function() {
-    const playerName = document.getElementById("playerName").value;
-    addPlayer(playerName);
-});
-<button id="increaseButton" onclick="increaseScore()">Increase Score</button>
-
-document.getElementById("increaseButton").addEventListener("click", function() {
-    increaseScore(playerId); // Replace with correct playerId
-});
-
-
+        firebase.initializeApp(firebaseConfig);
+        playersRef = firebase.database().ref('players');
+        updateScoreboard();
     </script>
 
 </body>
