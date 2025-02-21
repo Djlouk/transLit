@@ -40,6 +40,32 @@
             margin-bottom: 10px;
         }
     </style>
+    
+    <!-- Load Firebase as ES Module -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
+            authDomain: "translit-d2fea.firebaseapp.com",
+            databaseURL: "https://translit-d2fea.firebaseio.com",
+            projectId: "translit-d2fea",
+            storageBucket: "translit-d2fea.appspot.com",
+            messagingSenderId: "859534826301",
+            appId: "1:859534826301:web:82744789ead06c16108354"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.db = db; // Make Firebase accessible globally
+        window.ref = ref;
+        window.set = set;
+        window.push = push;
+        window.onValue = onValue;
+        window.update = update;
+    </script>
 </head>
 <body>
 
@@ -70,7 +96,7 @@
     <div>
         <label for="playerName">Enter Player Name:</label>
         <input type="text" id="playerName" placeholder="Enter player name">
-        <button id="addPlayer">Add Player</button>
+        <button onclick="addPlayer()">Add Player</button>
     </div>
 
     <div id="scoreboard">
@@ -80,43 +106,43 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    <script>
+        let translated = "";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
-            authDomain: "translit-d2fea.firebaseapp.com",
-            databaseURL: "https://translit-d2fea.firebaseio.com",
-            projectId: "translit-d2fea",
-            storageBucket: "translit-d2fea.appspot.com",
-            messagingSenderId: "859534826301",
-            appId: "1:859534826301:web:82744789ead06c16108354"
-        };
+        function translateText() {
+            let text = document.getElementById("textToTranslate").value;
+            let targetLanguage = document.getElementById("language").value;
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const playersRef = ref(db, 'players');
+            if (text.trim() === "") {
+                alert("Please enter text to translate.");
+                return;
+            }
 
-        function updateScoreboard() {
-            onValue(playersRef, (snapshot) => {
-                const scoreboard = document.getElementById('scoreboard');
-                scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
 
-                snapshot.forEach(childSnapshot => {
-                    let player = childSnapshot.val();
-                    let playerId = childSnapshot.key;
-
-                    scoreboard.innerHTML += `
-                        <div class="score-entry">
-                            <span>${player.name}</span>
-                            <span>${player.score}</span>
-                            <button onclick="increaseScore('${playerId}')">+1</button>
-                        </div>
-                    `;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    translated = data[0].map(item => item[0]).join("");
+                    document.getElementById("translatedText").innerText = translated;
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Translation failed. Please try again.");
                 });
-            });
+        }
+
+        function speakTranslation() {
+            if (!translated) {
+                alert("Translate something first!");
+                return;
+            }
+
+            let speech = new SpeechSynthesisUtterance(translated);
+            let targetLanguage = document.getElementById("language").value;
+            speech.lang = targetLanguage;
+
+            window.speechSynthesis.speak(speech);
         }
 
         function addPlayer() {
@@ -126,26 +152,44 @@
                 return;
             }
 
+            let playersRef = ref(db, 'players');
             let newPlayerRef = push(playersRef);
+
             set(newPlayerRef, {
                 name: playerName,
                 score: 0
             });
         }
 
-        window.increaseScore = function(playerId) {
-            const playerRef = ref(db, `players/${playerId}`);
-            get(playerRef).then(snapshot => {
-                if (snapshot.exists()) {
-                    let currentScore = snapshot.val().score || 0;
-                    update(playerRef, { score: currentScore + 1 });
+        function increaseScore(playerId) {
+            let playerRef = ref(db, 'players/' + playerId);
+
+            onValue(playerRef, (snapshot) => {
+                let playerData = snapshot.val();
+                if (playerData) {
+                    let newScore = (playerData.score || 0) + 1;
+                    update(playerRef, { score: newScore });
                 }
+            }, { onlyOnce: true });
+        }
+
+        onValue(ref(db, 'players'), (snapshot) => {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+
+            snapshot.forEach(childSnapshot => {
+                let player = childSnapshot.val();
+                let playerId = childSnapshot.key;
+
+                scoreboard.innerHTML += `
+                    <div class="score-entry">
+                        <span>${player.name}</span>
+                        <span>${player.score}</span>
+                        <button onclick="increaseScore('${playerId}')">+1</button>
+                    </div>
+                `;
             });
-        };
-
-        document.getElementById("addPlayer").addEventListener("click", addPlayer);
-        updateScoreboard();
+        });
     </script>
-
 </body>
 </html>
