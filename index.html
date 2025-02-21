@@ -162,6 +162,39 @@
                 });
             });
         });
+        // Function to remove a player
+function removePlayer(playerId) {
+    const playerRef = ref(db, 'players/' + playerId);
+    remove(playerRef)
+        .then(() => {
+            console.log("Player removed successfully");
+        })
+        .catch((error) => {
+            console.error("Error removing player: ", error);
+        });
+}
+scoreboard.innerHTML += `
+    <div class="score-entry">
+        <span>${player.name}</span>
+        <span>${player.score}</span>
+        <button onclick="increaseScore('${playerId}')">+1</button>
+        <button onclick="removePlayer('${playerId}')">Delete</button>
+    </div>
+`;
+// Function to reset all players' scores
+function resetAllScores() {
+    const playersRef = ref(db, 'players');
+    onValue(playersRef, (snapshot) => {
+        snapshot.forEach(childSnapshot => {
+            const playerId = childSnapshot.key;
+            const playerRef = ref(db, 'players/' + playerId);
+            update(playerRef, {
+                score: 0
+            });
+        });
+    });
+}
+
     </script>
 </head>
 <body>
