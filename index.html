@@ -69,94 +69,97 @@
         window.onValue = onValue;
         window.update = update;
 
-        // Define the addPlayer function
-        window.addPlayer = function() {
-            let playerName = document.getElementById("playerName").value.trim();
-            if (!playerName) {
-                alert("Enter a player name!");
-                return;
-            }
-
-            let playersRef = ref(db, 'players');
-            let newPlayerRef = push(playersRef);
-
-            set(newPlayerRef, {
-                name: playerName,
-                score: 0
-            }).then(() => {
-                console.log("Player added:", playerName);
-            }).catch((error) => {
-                console.error("Error adding player:", error);
-            });
-        };
-
-        // Function to handle translation
-        window.translateText = function() {
-            let text = document.getElementById("textToTranslate").value;
-            let targetLanguage = document.getElementById("language").value;
-
-            if (text.trim() === "") {
-                alert("Please enter text to translate.");
-                return;
-            }
-
-            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    let translated = data[0].map(item => item[0]).join("");
-                    document.getElementById("translatedText").innerText = translated;
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("Translation failed. Please try again.");
-                });
-        };
-
-        // Function to speak the translation
-        window.speakTranslation = function() {
-            let translated = document.getElementById("translatedText").innerText;
-            if (!translated) {
-                alert("Translate something first!");
-                return;
-            }
-
-            let speech = new SpeechSynthesisUtterance(translated);
-            let targetLanguage = document.getElementById("language").value;
-            speech.lang = targetLanguage;
-
-            window.speechSynthesis.speak(speech);
-        };
-
-        // Function to increase the score of a player
-        window.increaseScore = function(playerId) {
-            let playerRef = ref(db, 'players/' + playerId);
-
-            onValue(playerRef, (snapshot) => {
-                let playerData = snapshot.val();
-                if (playerData) {
-                    let newScore = (playerData.score || 0) + 1;
-                    update(playerRef, { score: newScore });
+        // Add EventListener to handle the DOMContentLoaded event
+        document.addEventListener("DOMContentLoaded", function () {
+            // Define the addPlayer function
+            window.addPlayer = function() {
+                let playerName = document.getElementById("playerName").value.trim();
+                if (!playerName) {
+                    alert("Enter a player name!");
+                    return;
                 }
-            }, { onlyOnce: true });
-        };
 
-        // Listen for changes in player data and update scoreboard
-        onValue(ref(db, 'players'), (snapshot) => {
-            const scoreboard = document.getElementById('scoreboard');
-            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
-            
-            snapshot.forEach(childSnapshot => {
-                let player = childSnapshot.val();
-                let playerId = childSnapshot.key;
-                scoreboard.innerHTML += `
-                    <div class="score-entry">
-                        <span>${player.name}</span>
-                        <span>${player.score}</span>
-                        <button onclick="increaseScore('${playerId}')">+1</button>
-                    </div>
-                `;
+                let playersRef = ref(db, 'players');
+                let newPlayerRef = push(playersRef);
+
+                set(newPlayerRef, {
+                    name: playerName,
+                    score: 0
+                }).then(() => {
+                    console.log("Player added:", playerName);
+                }).catch((error) => {
+                    console.error("Error adding player:", error);
+                });
+            };
+
+            // Function to handle translation
+            window.translateText = function() {
+                let text = document.getElementById("textToTranslate").value;
+                let targetLanguage = document.getElementById("language").value;
+
+                if (text.trim() === "") {
+                    alert("Please enter text to translate.");
+                    return;
+                }
+
+                let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        let translated = data[0].map(item => item[0]).join("");
+                        document.getElementById("translatedText").innerText = translated;
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("Translation failed. Please try again.");
+                    });
+            };
+
+            // Function to speak the translation
+            window.speakTranslation = function() {
+                let translated = document.getElementById("translatedText").innerText;
+                if (!translated) {
+                    alert("Translate something first!");
+                    return;
+                }
+
+                let speech = new SpeechSynthesisUtterance(translated);
+                let targetLanguage = document.getElementById("language").value;
+                speech.lang = targetLanguage;
+
+                window.speechSynthesis.speak(speech);
+            };
+
+            // Function to increase the score of a player
+            window.increaseScore = function(playerId) {
+                let playerRef = ref(db, 'players/' + playerId);
+
+                onValue(playerRef, (snapshot) => {
+                    let playerData = snapshot.val();
+                    if (playerData) {
+                        let newScore = (playerData.score || 0) + 1;
+                        update(playerRef, { score: newScore });
+                    }
+                }, { onlyOnce: true });
+            };
+
+            // Listen for changes in player data and update scoreboard
+            onValue(ref(db, 'players'), (snapshot) => {
+                const scoreboard = document.getElementById('scoreboard');
+                scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+                
+                snapshot.forEach(childSnapshot => {
+                    let player = childSnapshot.val();
+                    let playerId = childSnapshot.key;
+                    scoreboard.innerHTML += `
+                        <div class="score-entry">
+                            <span>${player.name}</span>
+                            <span>${player.score}</span>
+                            <button onclick="increaseScore('${playerId}')">+1</button>
+                        </div>
+                    `;
+                });
             });
         });
     </script>
