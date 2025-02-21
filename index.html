@@ -44,7 +44,7 @@
     <!-- Load Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -156,11 +156,14 @@
                     let translated = data[0].map(item => item[0]).join("");
                     document.getElementById("translatedText").innerText = translated;
 
-                    // Store translation in Firebase
+                    // Store translation in Firebase for all players to see and hear
                     set(ref(db, 'latestTranslation'), {
                         text: translated,
                         language: targetLanguage
                     });
+
+                    // Trigger speaking to all players
+                    speakTranslation(translated, targetLanguage);
                 })
                 .catch(error => {
                     console.error("Error:", error);
@@ -168,30 +171,24 @@
                 });
         };
 
-        // Listen for translation updates in real-time
-        onValue(ref(db, 'latestTranslation'), (snapshot) => {
-            if (snapshot.exists()) {
-                let data = snapshot.val();
-                document.getElementById("translatedText").innerText = data.text;
-                document.getElementById("speakButton").setAttribute("data-lang", data.language);
-            }
-        });
-
         // Function to speak the translation (for all players)
-        window.speakTranslation = function() {
-            let translated = document.getElementById("translatedText").innerText;
-            let targetLanguage = document.getElementById("speakButton").getAttribute("data-lang");
-
-            if (!translated) {
-                alert("No translation available!");
-                return;
-            }
-
+        window.speakTranslation = function(translated, targetLanguage) {
+            // Speak the translated text for all players
             let speech = new SpeechSynthesisUtterance(translated);
             speech.lang = targetLanguage;
 
             window.speechSynthesis.speak(speech);
         };
+
+        // Listen for translation updates in real-time (for all players)
+        onValue(ref(db, 'latestTranslation'), (snapshot) => {
+            if (snapshot.exists()) {
+                let data = snapshot.val();
+                document.getElementById("translatedText").innerText = data.text;
+                speakTranslation(data.text, data.language);  // Automatically speak the translation
+            }
+        });
+
     </script>
 </head>
 <body>
