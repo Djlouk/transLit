@@ -80,73 +80,27 @@
         </div>
     </div>
 
-    <script>
-        let translated = "";
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        function translateText() {
-            let text = document.getElementById("textToTranslate").value;
-            let targetLanguage = document.getElementById("language").value;
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
+            authDomain: "translit-d2fea.firebaseapp.com",
+            databaseURL: "https://translit-d2fea.firebaseio.com",
+            projectId: "translit-d2fea",
+            storageBucket: "translit-d2fea.appspot.com",
+            messagingSenderId: "859534826301",
+            appId: "1:859534826301:web:82744789ead06c16108354"
+        };
 
-            if (text.trim() === "") {
-                alert("Please enter text to translate.");
-                return;
-            }
-
-            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    translated = data[0].map(item => item[0]).join("");
-                    document.getElementById("translatedText").innerText = translated;
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("Translation failed. Please try again.");
-                });
-        }
-
-        function speakTranslation() {
-            if (!translated) {
-                alert("Translate something first!");
-                return;
-            }
-
-            let speech = new SpeechSynthesisUtterance(translated);
-            let targetLanguage = document.getElementById("language").value;
-            speech.lang = targetLanguage;
-
-            window.speechSynthesis.speak(speech);
-        }
-
-        let playersRef;
-
-        function addPlayer() {
-            let playerName = document.getElementById("playerName").value.trim();
-            
-            if (!playerName) {
-                alert("Enter a player name!");
-                return;
-            }
-
-            let newPlayerRef = playersRef.push();
-            newPlayerRef.set({
-                name: playerName,
-                score: 0
-            });
-        }
-
-        function increaseScore(playerId) {
-            const playerRef = playersRef.child(playerId);
-
-            playerRef.once('value').then(snapshot => {
-                let currentScore = snapshot.val().score || 0;
-                playerRef.update({ score: currentScore + 1 });
-            });
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const playersRef = ref(db, 'players');
 
         function updateScoreboard() {
-            playersRef.on('value', function(snapshot) {
+            onValue(playersRef, (snapshot) => {
                 const scoreboard = document.getElementById('scoreboard');
                 scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
 
@@ -165,26 +119,31 @@
             });
         }
 
-        document.getElementById("addPlayer").addEventListener("click", addPlayer);
-    </script>
+        function addPlayer() {
+            let playerName = document.getElementById("playerName").value.trim();
+            if (!playerName) {
+                alert("Enter a player name!");
+                return;
+            }
 
-    <!-- Firebase SDK (Moved to the bottom) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+            let newPlayerRef = push(playersRef);
+            set(newPlayerRef, {
+                name: playerName,
+                score: 0
+            });
+        }
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
-            authDomain: "translit-d2fea.firebaseapp.com",
-            databaseURL: "https://translit-d2fea.firebaseio.com",
-            projectId: "translit-d2fea",
-            storageBucket: "translit-d2fea.appspot.com",
-            messagingSenderId: "859534826301",
-            appId: "1:859534826301:web:82744789ead06c16108354"
+        window.increaseScore = function(playerId) {
+            const playerRef = ref(db, `players/${playerId}`);
+            get(playerRef).then(snapshot => {
+                if (snapshot.exists()) {
+                    let currentScore = snapshot.val().score || 0;
+                    update(playerRef, { score: currentScore + 1 });
+                }
+            });
         };
 
-        firebase.initializeApp(firebaseConfig);
-        playersRef = firebase.database().ref('players');
+        document.getElementById("addPlayer").addEventListener("click", addPlayer);
         updateScoreboard();
     </script>
 
