@@ -41,51 +41,12 @@
         }
     </style>
 
-    <!-- Firebase v8 SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Firebase v9 Modular SDK -->
+    <script type="module">
+        // Import the necessary Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-</head>
-<body>
-
-    <h1>TransLit with Live Scoring</h1>
-
-    <h2>Enter Text to Translate</h2>
-    <textarea id="textToTranslate" placeholder="Enter text here..."></textarea>
-    <br>
-
-    <label for="language">Select Language:</label>
-    <select id="language">
-        <option value="es">Spanish</option>
-        <option value="fr">French</option>
-        <option value="de">German</option>
-        <option value="it">Italian</option>
-        <option value="zh-CN">Chinese (Simplified)</option>
-        <option value="ja">Japanese</option>
-        <option value="hi">Hindi</option>
-    </select>
-    <br>
-
-    <button onclick="translateText()">Translate</button>
-    <button onclick="speakTranslation()">🔊 Speak</button>
-
-    <p id="translatedText">Translation will appear here...</p>
-
-    <h2>Player Scoring</h2>
-    <div>
-        <label for="playerName">Enter Player Name:</label>
-        <input type="text" id="playerName" placeholder="Enter player name">
-        <button onclick="addPlayer()">Add Player</button>
-    </div>
-
-    <div id="scoreboard">
-        <h3>Live Scores:</h3>
-        <div class="score-entry">
-            <span>Player Name</span><span>Score</span>
-        </div>
-    </div>
-
-    <script>
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD6RXGgWex_FADsLKASiU4Yj5d7pt--2IY",
@@ -98,8 +59,8 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
         // Store translated text
         let translated = "";
@@ -150,10 +111,10 @@
                 return;
             }
 
-            const playersRef = db.ref('players');
-            const newPlayerRef = playersRef.push();  // Push new player
+            const playersRef = ref(db, 'players');
+            const newPlayerRef = push(playersRef);  // Push new player
 
-            newPlayerRef.set({
+            set(newPlayerRef, {
                 name: playerName,
                 score: 0
             });
@@ -161,13 +122,13 @@
 
         // Increase score of a player
         function increaseScore(playerId) {
-            const playerRef = db.ref('players/' + playerId);
+            const playerRef = ref(db, 'players/' + playerId);
 
             playerRef.once('value', (snapshot) => {
                 let playerData = snapshot.val();
                 if (playerData) {
                     let newScore = (playerData.score || 0) + 1;
-                    playerRef.update({ score: newScore });
+                    update(playerRef, { score: newScore });
                 }
             });
         }
@@ -175,7 +136,7 @@
         // Listen for changes in the player data and update scoreboard
         const scoreboard = document.getElementById('scoreboard');
 
-        db.ref('players').on('value', (snapshot) => {
+        onValue(ref(db, 'players'), (snapshot) => {
             console.log("Database snapshot: ", snapshot.val());  // Debugging line
             scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>"; // Reset header
 
@@ -195,7 +156,47 @@
                 scoreboard.appendChild(playerEntry);  // Append new player entry to scoreboard
             });
         });
-
     </script>
+
+</head>
+<body>
+
+    <h1>TransLit with Live Scoring</h1>
+
+    <h2>Enter Text to Translate</h2>
+    <textarea id="textToTranslate" placeholder="Enter text here..."></textarea>
+    <br>
+
+    <label for="language">Select Language:</label>
+    <select id="language">
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="it">Italian</option>
+        <option value="zh-CN">Chinese (Simplified)</option>
+        <option value="ja">Japanese</option>
+        <option value="hi">Hindi</option>
+    </select>
+    <br>
+
+    <button onclick="translateText()">Translate</button>
+    <button onclick="speakTranslation()">🔊 Speak</button>
+
+    <p id="translatedText">Translation will appear here...</p>
+
+    <h2>Player Scoring</h2>
+    <div>
+        <label for="playerName">Enter Player Name:</label>
+        <input type="text" id="playerName" placeholder="Enter player name">
+        <button onclick="addPlayer()">Add Player</button>
+    </div>
+
+    <div id="scoreboard">
+        <h3>Live Scores:</h3>
+        <div class="score-entry">
+            <span>Player Name</span><span>Score</span>
+        </div>
+    </div>
+
 </body>
 </html>
