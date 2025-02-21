@@ -164,7 +164,76 @@
                 updateScoreboard();
             }
         }
+        // Initialize Firebase
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Store player scores
+let playersRef = db.ref('players');
+
+// Add player to the database
+function addPlayer(playerName) {
+    playersRef.push({
+        name: playerName,
+        score: 0
+    });
+}
+
+// Update player score
+function increaseScore(playerId) {
+    const playerRef = playersRef.child(playerId);
+    playerRef.update({
+        score: playerRef.score + 1
+    });
+}
+
+// Listen for changes to player scores (real-time)
+playersRef.on('child_changed', function(snapshot) {
+    const player = snapshot.val();
+    updateScoreboard(player);
+});
+
+// Display the updated scoreboard
+function updateScoreboard(player) {
+    const scoreboard = document.getElementById('scoreboard');
+    scoreboard.innerHTML = ''; // clear previous list
+    playersRef.on('child_added', function(snapshot) {
+        const player = snapshot.val();
+        // Display player score
+        scoreboard.innerHTML += `
+            <div class="score-entry">
+                <span>${player.name}</span>
+                <span>${player.score}</span>
+                <button onclick="increaseScore('${snapshot.key}')">+1</button>
+            </div>
+        `;
+    });
+}
+
+// On Player Action
+document.getElementById("addPlayer").addEventListener("click", function() {
+    const playerName = document.getElementById("playerName").value;
+    addPlayer(playerName);
+});
+
+document.getElementById("increaseButton").addEventListener("click", function() {
+    increaseScore(playerId); // Replace with correct playerId
+});
+
     </script>
+<!-- Add Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
 </body>
 </html>
