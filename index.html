@@ -139,10 +139,13 @@
             updateScoreboard();
         }
 
-        // Increase score for a player
+        // Update scoreboard without clearing the entire content
         function updateScoreboard() {
             const scoreboard = document.getElementById("scoreboard");
-            scoreboard.innerHTML = "<h3>Live Scores:</h3><div class='score-entry'><span>Player Name</span><span>Score</span></div>";
+
+            // First, clear only the player entries, not the header
+            const playersDiv = scoreboard.querySelectorAll('.score-entry');
+            playersDiv.forEach(entry => entry.remove());
 
             players.forEach(player => {
                 let playerEntry = document.createElement("div");
