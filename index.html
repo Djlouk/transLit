@@ -44,7 +44,7 @@
     <!-- Load Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -68,10 +68,10 @@
         window.push = push;
         window.onValue = onValue;
         window.update = update;
+        window.remove = remove;
 
-        // Add EventListener to handle the DOMContentLoaded event
         document.addEventListener("DOMContentLoaded", function () {
-            // Define the addPlayer function
+            // Function to add a player
             window.addPlayer = function() {
                 let playerName = document.getElementById("playerName").value.trim();
                 if (!playerName) {
@@ -92,7 +92,7 @@
                 });
             };
 
-            // Function to handle translation
+            // Function to handle text translation
             window.translateText = function() {
                 let text = document.getElementById("textToTranslate").value;
                 let targetLanguage = document.getElementById("language").value;
@@ -116,7 +116,7 @@
                     });
             };
 
-            // Function to speak the translation
+            // Function to speak the translated text
             window.speakTranslation = function() {
                 let translated = document.getElementById("translatedText").innerText;
                 if (!translated) {
@@ -131,7 +131,7 @@
                 window.speechSynthesis.speak(speech);
             };
 
-            // Function to increase the score of a player
+            // Function to increase player score
             window.increaseScore = function(playerId) {
                 let playerRef = ref(db, 'players/' + playerId);
 
@@ -142,6 +142,30 @@
                         update(playerRef, { score: newScore });
                     }
                 }, { onlyOnce: true });
+            };
+
+            // Function to remove a player
+            window.removePlayer = function(playerId) {
+                const playerRef = ref(db, 'players/' + playerId);
+                remove(playerRef)
+                    .then(() => {
+                        console.log("Player removed successfully");
+                    })
+                    .catch((error) => {
+                        console.error("Error removing player:", error);
+                    });
+            };
+
+            // Function to reset all players' scores
+            window.resetAllScores = function() {
+                const playersRef = ref(db, 'players');
+                onValue(playersRef, (snapshot) => {
+                    snapshot.forEach(childSnapshot => {
+                        const playerId = childSnapshot.key;
+                        const playerRef = ref(db, 'players/' + playerId);
+                        update(playerRef, { score: 0 });
+                    });
+                });
             };
 
             // Listen for changes in player data and update scoreboard
@@ -157,44 +181,12 @@
                             <span>${player.name}</span>
                             <span>${player.score}</span>
                             <button onclick="increaseScore('${playerId}')">+1</button>
+                            <button onclick="removePlayer('${playerId}')">Delete</button>
                         </div>
                     `;
                 });
             });
         });
-        // Function to remove a player
-function removePlayer(playerId) {
-    const playerRef = ref(db, 'players/' + playerId);
-    remove(playerRef)
-        .then(() => {
-            console.log("Player removed successfully");
-        })
-        .catch((error) => {
-            console.error("Error removing player: ", error);
-        });
-}
-scoreboard.innerHTML += `
-    <div class="score-entry">
-        <span>${player.name}</span>
-        <span>${player.score}</span>
-        <button onclick="increaseScore('${playerId}')">+1</button>
-        <button onclick="removePlayer('${playerId}')">Delete</button>
-    </div>
-`;
-// Function to reset all players' scores
-function resetAllScores() {
-    const playersRef = ref(db, 'players');
-    onValue(playersRef, (snapshot) => {
-        snapshot.forEach(childSnapshot => {
-            const playerId = childSnapshot.key;
-            const playerRef = ref(db, 'players/' + playerId);
-            update(playerRef, {
-                score: 0
-            });
-        });
-    });
-}
-
     </script>
 </head>
 <body>
@@ -235,6 +227,8 @@ function resetAllScores() {
             <span>Player Name</span><span>Score</span>
         </div>
     </div>
+
+    <button onclick="resetAllScores()">Reset All Scores</button>
 
 </body>
 </html>
