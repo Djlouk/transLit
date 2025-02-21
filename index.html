@@ -242,6 +242,17 @@
                 console.error("Error sending message:", error);
             });
         };
+// Function to reset the chat
+window.resetChat = function() {
+    const chatRef = ref(db, 'chat');
+    remove(chatRef)  // Removes all chat messages from the database
+        .then(() => {
+            console.log("Chat has been reset.");
+        })
+        .catch((error) => {
+            console.error("Error resetting chat:", error);
+        });
+};
 
         // Listen for new messages and display them in real-time
         onValue(ref(db, 'chat'), (snapshot) => {
@@ -295,10 +306,11 @@
     <div id="translationBox"></div>
 
     <!-- Chat Feature -->
-    <h2>Chat</h2>
-    <div id="chatBox"></div>
-    <input type="text" id="chatInput" placeholder="Type a message...">
-    <button id="sendMessage" onclick="sendMessage()">Send</button>
+<h2>Chat</h2>
+<div id="chatBox"></div>
+<input type="text" id="chatInput" placeholder="Type a message...">
+<button id="sendMessage" onclick="sendMessage()">Send</button>
+<button onclick="resetChat()">Reset Chat</button>
 
 </body>
 </html>
