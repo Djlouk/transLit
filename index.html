@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TransLit with Scoring</title>
+    <title>TransLit with Scoring and Chat</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -43,6 +43,26 @@
             margin-top: 20px;
             font-size: 18px;
             color: #28a745;
+        }
+        #chatBox {
+            margin-top: 40px;
+            width: 80%;
+            max-height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            font-size: 16px;
+            background-color: #f9f9f9;
+        }
+        #chatInput {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #sendMessage {
+            padding: 10px;
+            font-size: 16px;
         }
     </style>
 
@@ -211,11 +231,53 @@
             });
         });
 
+        // Function to send a chat message
+        window.sendMessage = function() {
+            let message = document.getElementById("chatInput").value.trim();
+            let playerName = document.getElementById("playerName").value.trim();
+
+            if (message === "") {
+                alert("Please enter a message.");
+                return;
+            }
+
+            if (!playerName) {
+                alert("Please add a player first!");
+                return;
+            }
+
+            const chatRef = ref(db, 'chat');
+            let newMessageRef = push(chatRef);
+
+            set(newMessageRef, {
+                player: playerName,
+                message: message,
+                timestamp: new Date().toISOString()
+            }).then(() => {
+                document.getElementById("chatInput").value = ""; // Clear input field after sending
+            }).catch((error) => {
+                console.error("Error sending message:", error);
+            });
+        };
+
+        // Listen for new messages and display them in real-time
+        onValue(ref(db, 'chat'), (snapshot) => {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = ""; // Clear chat box
+
+            snapshot.forEach(childSnapshot => {
+                let messageData = childSnapshot.val();
+                let message = messageData.message;
+                let player = messageData.player;
+
+                chatBox.innerHTML += `<p><strong>${player}:</strong> ${message}</p>`;
+            });
+        });
     </script>
 </head>
 <body>
 
-    <h1>TransLit with Live Scoring</h1>
+    <h1>TransLit with Live Scoring and Chat</h1>
 
     <h2>Enter Text to Translate</h2>
     <textarea id="textToTranslate" placeholder="Enter text here..."></textarea>
@@ -248,6 +310,11 @@
 
     <!-- Display translations for each player -->
     <div id="translationBox"></div>
+
+    <h2>Chat</h2>
+    <div id="chatBox"></div>
+    <input type="text" id="chatInput" placeholder="Type a message...">
+    <button id="sendMessage" onclick="sendMessage()">Send</button>
 
 </body>
 </html>
