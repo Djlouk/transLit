@@ -39,6 +39,11 @@
             justify-content: space-between;
             margin-bottom: 10px;
         }
+        .translation-box {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #28a745;
+        }
     </style>
 
     <!-- Load Firebase SDK -->
@@ -138,13 +143,19 @@
             });
         });
 
-        // Function to translate text and store in Firebase
+        // Function to translate text and store in Firebase for each player
         window.translateText = function() {
             let text = document.getElementById("textToTranslate").value;
             let targetLanguage = document.getElementById("language").value;
+            let playerName = document.getElementById("playerName").value.trim();
 
             if (text.trim() === "") {
                 alert("Please enter text to translate.");
+                return;
+            }
+
+            if (!playerName) {
+                alert("Please add a player first!");
                 return;
             }
 
@@ -156,10 +167,12 @@
                     let translated = data[0].map(item => item[0]).join("");
                     document.getElementById("translatedText").innerText = translated;
 
-                    // Store translation in Firebase for all players to see and hear
-                    set(ref(db, 'latestTranslation'), {
-                        text: translated,
-                        language: targetLanguage
+                    // Store the translation for this player in Firebase
+                    const playerRef = ref(db, 'players/' + playerName);
+                    set(playerRef, {
+                        name: playerName,
+                        score: 0,
+                        translation: translated,
                     });
 
                     // Trigger speaking to all players
@@ -173,20 +186,29 @@
 
         // Function to speak the translation (for all players)
         window.speakTranslation = function(translated, targetLanguage) {
-            // Speak the translated text for all players
             let speech = new SpeechSynthesisUtterance(translated);
             speech.lang = targetLanguage;
 
             window.speechSynthesis.speak(speech);
         };
 
-        // Listen for translation updates in real-time (for all players)
-        onValue(ref(db, 'latestTranslation'), (snapshot) => {
-            if (snapshot.exists()) {
-                let data = snapshot.val();
-                document.getElementById("translatedText").innerText = data.text;
-                speakTranslation(data.text, data.language);  // Automatically speak the translation
-            }
+        // Listen for translation updates for each player and display them separately
+        onValue(ref(db, 'players'), (snapshot) => {
+            const translationBox = document.getElementById('translationBox');
+            translationBox.innerHTML = "<h3>Player Translations:</h3>";
+
+            snapshot.forEach(childSnapshot => {
+                let player = childSnapshot.val();
+                let playerId = childSnapshot.key;
+                let translation = player.translation || "No translation yet";
+
+                translationBox.innerHTML += `
+                    <div class="translation-box">
+                        <strong>${player.name}'s Translation:</strong>
+                        <p>${translation}</p>
+                    </div>
+                `;
+            });
         });
 
     </script>
@@ -223,6 +245,9 @@
     </div>
 
     <div id="scoreboard"></div>
+
+    <!-- Display translations for each player -->
+    <div id="translationBox"></div>
 
 </body>
 </html>
